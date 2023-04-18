@@ -132,4 +132,4 @@ dmypy.json
 .vscode
 
 # results
-./opinions/*
+./opinions

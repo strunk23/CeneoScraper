@@ -4,14 +4,15 @@ import requests
 from bs4 import BeautifulSoup
 
 
-def get_something(dom_tree, selector, attribute=None):
+def get_element(dom_tree, selector=None, attribute=None):
     try:
         if attribute:
-            return dom_tree.select_one(selector).text.strip()
-        
+            if selector:
+                return dom_tree.select_one(selector)[attribute].text.strip()
+            return dom_tree[attribute]
         return dom_tree.select_one(selector).text.strip()
     
-    except AttributeError:
+    except (AttributeError, TypeError):
         return None
 
 product_code = input("Please enter the product code: ")
@@ -24,6 +25,7 @@ while url:
 
     if response.status_code == requests.codes.ok:
         page_done = BeautifulSoup(response.text, 'html.parser')
+        print(get_element(page_done))
         opinions = page_done.select("div.js_product-review")
         
         if len(opinions) > 0:
@@ -31,27 +33,18 @@ while url:
             for opinion in opinions:
 
                 opinion_id = opinion["data-entry-id"]
-                author = opinion.select_one("span.user-post__author-name").text.strip()
-
-                try:
-                    recommendation = opinion.select_one("span.user-post__author-recommendation > em").text.strip()
-                except AttributeError:
-                    recommendation = None
-
-                score = opinion.select_one("span.user-post__score-count").text.strip()
-                description = opinion.select_one("div.user-post__text").text.strip()
+                author = get_element(opinion, "span.user-post__author-name")
+                recommendation = get_element(opinion, "span.user-post__author-recommendation > em")
+                score = get_element(opinion, "span.user-post__score-count")
+                description = get_element(opinion, "div.user-post__text")
                 pros = opinion.select("div.review-feature__col:has( > div.review-feature__title--positives) > div.review-feature__item")
                 pros = [p.text.strip() for p in pros]
                 cons = opinion.select("div.review-feature__col:has( > div.review-feature__title--negatives) > div.review-feature__item")
                 cons = [c.text.strip() for c in cons]
-                like = opinion.select_one("button.vote-yes > span").text.strip()
-                dislike = opinion.select_one("button.vote-yes > span").text.strip()
-                publish_date = opinion.select_one("span.user-post__published > time:nth-child(1)")["datetime"].strip()
-
-                try:
-                    purchase_date = opinion.select_one("span.user-post__published > time:nth-child(2)")["datetime"].strip()
-                except AttributeError:
-                    purchase_date = None
+                like = get_element(opinion, "button.vote-yes > span")
+                dislike = get_element(opinion, "button.vote-yes > span")
+                publish_date = get_element(opinion, "span.user-post__published > time:nth-child(1)", "datetime")
+                purchase_date = get_element(opinion, "span.user-post__published > time:nth-child(2)", "datetime")
 
                 single_opinion = {
                     "opinion_id": opinion_id,
@@ -69,7 +62,7 @@ while url:
 
                 all_opinions.append(single_opinion)
             try:
-                url = "https://www.ceneo.pl" + page_done.select_one("a.pagination__next")["href"]
+                url = "https://www.ceneo.pl" + get_element(page_done, "a.pagination__next", "href")
             except TypeError:
                 url = None
             print(url)
