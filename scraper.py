@@ -37,7 +37,6 @@ selectors = {
     }
 
 
-#product_code = input("Please enter the product code: ")
 product_code = "129901214"
 url = f"https://www.ceneo.pl/{product_code}#tab=reviews"
 all_opinions = []
